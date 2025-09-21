@@ -1,6 +1,5 @@
-import torch
 import streamlit as st
-from transformers import pipeline
+import requests
 
 # -----------------------
 # Page Config
@@ -31,23 +30,23 @@ body {
     color: white;
     border-radius: 8px;
     height: 3em;
-    width: 220px;
-    font-size: 18px;
-    margin: auto;
-    display: block;
+    width: 100%;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Load Hugging Face Model
+# Hugging Face API Setup
 # -----------------------
-@st.cache_resource
-def load_generator():
-    # use smaller, lightweight model for Streamlit Cloud
-    return pipeline("text-generation", model="distilgpt2")
+HF_API_URL = "https://api-inference.huggingface.co/models/gpt2"
+HF_API_TOKEN = "your_huggingface_token_here"  # 🔑 replace with your token
 
-generator = load_generator()
+def generate_text(prompt, max_length=200, temperature=0.9):
+    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+    payload = {"inputs": prompt, "parameters": {"max_length": max_length, "temperature": temperature}}
+    response = requests.post(HF_API_URL, headers=headers, json=payload)
+    response.raise_for_status()
+    return response.json()[0]["generated_text"]
 
 # -----------------------
 # Constants
@@ -67,8 +66,7 @@ I am a {user_profile['yearsOfExperience']}-year experienced {user_profile['curre
 My interests are {user_profile['interests']}. Suggest {num_careers} possible career paths. 
 For each, provide a title, description, pros, cons, required skills, and a short roadmap.
 """
-    result = generator(prompt, max_length=400, do_sample=True, temperature=0.9)
-    text = result[0]['generated_text']
+    text = generate_text(prompt, max_length=500 * num_careers, temperature=0.9)
 
     careers = []
     for i in range(num_careers):
@@ -84,13 +82,11 @@ For each, provide a title, description, pros, cons, required skills, and a short
                 "missingSkills": ["Statistics", "Machine Learning"]
             },
             "careerRoadmap": [
-                {"step": 1, "title": "Learn new skills", "description": "Focus on missing skills", 
-                 "resources": [{"title": "Khan Academy", "url": "https://www.khanacademy.org", "type": "course"}]}
+                {"step": 1, "title": "Learn new skills", "description": "Focus on missing skills", "resources": [{"title": "Khan Academy", "url": "https://www.khanacademy.org", "type": "course"}]}
             ],
             "interviewQuestions": [{"question": "Tell me about yourself", "tip": "Keep it concise"}],
             "jobPostings": ["https://example.com/job1", "https://example.com/job2"],
-            "projectIdeas": [{"title": "Example Project", "description": "Build something relevant", 
-                              "skillsApplied": user_profile['skills'].split(",")}]
+            "projectIdeas": [{"title": "Example Project", "description": "Build something relevant", "skillsApplied": user_profile['skills'].split(",")}]
         })
     return {"careers": careers}
 
@@ -115,11 +111,25 @@ def home_page():
     st.markdown("<h1 style='text-align:center; color:#4B0082;'>AI Career Path Generator 🚀</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;'>Discover your perfect career path based on skills, experience, and interests.</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
-
-    if st.button("Get Started"):
+    
+    get_started = st.button("Get Started")
+    if get_started:
         st.session_state.page = "career_form"
-        st.rerun()
-
+    
+    st.markdown("""
+    <style>
+    div.stButton > button:first-child {
+        display: block;
+        margin: 30px auto;
+        height: 3em;
+        width: 200px;
+        font-size: 18px;
+        background-color: #4B0082;
+        color: white;
+        border-radius: 8px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 def career_form_page():
     st.header("Career Path Finder 🧭")
@@ -143,8 +153,6 @@ def career_form_page():
                 response = get_career_suggestions(st.session_state.user_profile)
                 st.session_state.careers = response["careers"]
             st.session_state.page = "career_suggestions"
-            st.rerun()
-
 
 def career_suggestions_page():
     st.header("Career Suggestions 💼")
@@ -152,18 +160,16 @@ def career_suggestions_page():
 
     for idx, career in enumerate(st.session_state.careers):
         st.markdown(f"<div class='card'><h3>{career['title']}</h3><p>{career['description'][:200]}...</p></div>", unsafe_allow_html=True)
-        if st.button(f"➡️ Choose Career {idx+1}", key=idx):
+        if st.button(f"➡️ Choose Career", key=idx):
             st.session_state.selected_career = career
             st.session_state.page = "career_dashboard"
             st.rerun()
-
 
 def career_dashboard_page():
     career = st.session_state.selected_career
     if not career:
         st.warning("No career selected! Please choose a career first.")
         st.session_state.page = "career_suggestions"
-        st.rerun()
         return
 
     st.markdown(f"<h2 style='color:#4B0082;'>{career['title']}</h2>", unsafe_allow_html=True)
@@ -210,19 +216,15 @@ def career_dashboard_page():
 
     st.markdown("---")
     st.header("📓 Notes")
-    st.text_area("Write your notes here:", value=st.session_state.notes, key="notes_area", 
-                 on_change=lambda: st.session_state.__setitem__('notes', st.session_state.notes_area))
+    st.text_area("Write your notes here:", value=st.session_state.notes, key="notes_area", on_change=lambda: st.session_state.__setitem__('notes', st.session_state.notes_area))
 
-    # Navigation buttons centered
-    col1, col2 = st.columns([1,1])
+    col1, col2 = st.columns(2)
     with col1:
         if st.button("← Back to Suggestions"):
             st.session_state.page = "career_suggestions"
-            st.rerun()
     with col2:
         if st.button("🏠 Home"):
             st.session_state.page = "home"
-            st.rerun()
 
 # -----------------------
 # Navigation
