@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Career Path Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.5s ease-out forwards;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                background-color: white !important;
+                padding: 1rem;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-container > div:first-child { /* Hide header on print */
+                 display: none;
+            }
+            .print-card {
+                background-color: white !important;
+                border: 1px solid #e2e8f0 !important; /* gray-200 */
+                page-break-inside: avoid;
+                box-shadow: none !important;
+            }
+            h1, h2, h3, h4, p, li, span {
+                color: black !important;
+            }
+            div {
+                 background-color: transparent !important;
+            }
+            a {
+                color: #2563eb !important; /* blue-600 */
+                text-decoration: none;
+            }
+            .print-hidden-icon {
+                display: none;
+            }
+        }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://aistudiocdn.com/react@^19.1.1",
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+        "react/": "https://aistudiocdn.com/react@^19.1.1/",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0"
+      }
+    }
+    </script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
